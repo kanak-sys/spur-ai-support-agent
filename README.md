@@ -163,7 +163,7 @@ http://localhost:5173
 
 ### 🧠 AI Support Chat in Action
 
-![Spur AI Support Agent Chat Demo](screenshots/chat-demo.png)
+<img width="658" height="818" alt="{2EF10AF8-EB4F-4523-BFF4-E2135645AD4E}" src="https://github.com/user-attachments/assets/c01a492f-6c2e-40a6-95b6-ae7f223bc4b1" />
 
 *Example conversation showing the AI assisting a user with placing an order.*
 
