@@ -14,13 +14,14 @@ export default function App() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // 🌍 LIVE BACKEND URL
   const backendURL = "https://spur-ai-support-agent-xf77.onrender.com/chat";
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(scrollToBottom, [messages]);
 
-  // 🎉 Welcome message first time only
+  // 🎉 Welcome message
   useEffect(() => {
     if (!localStorage.getItem("spur-welcome")) {
       setMessages([{ sender: "ai", text: "👋 Hey! I'm your Spur AI Support Agent — how can I assist today?" }]);
@@ -28,27 +29,27 @@ export default function App() {
     }
   }, []);
 
-  // Load saved session
+  // 💾 Load saved session
   useEffect(() => {
     const saved = localStorage.getItem("spur-session");
     if (saved) setSessionId(saved);
   }, []);
 
-  // Fetch old chat
+  // 📜 Fetch old chat history
   useEffect(() => {
     const loadHistory = async () => {
       if (!sessionId) return;
       try {
         const res = await axios.get(`${backendURL}/${sessionId}`);
         setMessages(res.data);
-      } catch {
-        console.log("History loading failed");
+      } catch (err) {
+        console.log("History loading failed:", err);
       }
     };
     loadHistory();
   }, [sessionId]);
 
-  // 🎤 Voice input handler
+  // 🎤 Voice input
   const startVoiceInput = () => {
     if (!("webkitSpeechRecognition" in window)) {
       alert("Voice input is not supported in this browser 😢");
@@ -65,8 +66,15 @@ export default function App() {
     recognition.start();
   };
 
+  // 💬 Send message
   const sendMessage = async () => {
     if (!input.trim()) return;
+
+    // 🚫 limit message length
+    if (input.length > 500) {
+      alert("Message too long — please keep under 500 characters");
+      return;
+    }
 
     const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -82,15 +90,23 @@ export default function App() {
 
       const aiMsg: Message = { sender: "ai", text: res.data.reply, time: timestamp };
       setMessages(prev => [...prev, aiMsg]);
-    } catch {
-      setMessages(prev => [...prev, { sender: "ai", text: "⚠️ Something went wrong. Try again.", time: timestamp }]);
+    } 
+    catch (err) {
+      console.log(err);
+      setMessages(prev => [
+        ...prev,
+        { sender: "ai", text: "⚠️ Agent had a problem — please try again." }
+      ]);
     }
+
     setLoading(false);
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) =>
     e.key === "Enter" && !loading && sendMessage();
 
+
+  // -------------------- UI RENDER --------------------
   return (
     <div style={styles.container}>
       <div style={styles.chatBox}>
@@ -112,9 +128,11 @@ export default function App() {
           {messages.map((m, i) => (
             <div key={i} style={m.sender === "user" ? styles.userRow : styles.aiRow}>
               <img
-                src={m.sender === "user"
-                  ? "https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=user"
-                  : "https://api.dicebear.com/9.x/bottts/svg?seed=ai"}
+                src={
+                  m.sender === "user"
+                    ? "https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=user"
+                    : "https://api.dicebear.com/9.x/bottts/svg?seed=ai"
+                }
                 style={styles.avatar}
               />
               <div>
@@ -124,7 +142,7 @@ export default function App() {
             </div>
           ))}
 
-          {/* 🔵 Typing animation */}
+          {/* ⏳ Typing animation */}
           {loading && (
             <div style={styles.aiRow}>
               <img src="https://api.dicebear.com/9.x/bottts/svg?seed=ai" style={styles.avatar} />
@@ -135,7 +153,7 @@ export default function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 🔊 Voice mic added */}
+        {/* 💬 Input area */}
         <div style={styles.inputRow}>
           <button style={styles.micBtn} onClick={startVoiceInput}>🎤</button>
 
@@ -154,7 +172,7 @@ export default function App() {
   );
 }
 
-// 🌈 Styling
+// -------------------- STYLES --------------------
 const styles: any = {
   container: {
     height: "100vh",
@@ -211,8 +229,6 @@ const styles: any = {
     background: sender === "user" ? "#2563eb" : "#e2e8f0"
   }),
   time: { fontSize: "10px", opacity: 0.6, marginLeft: "4px" },
-
-  // 🎤 voice button
   micBtn: {
     background: "#f1f5f9",
     border: "1px solid #cbd5e1",
@@ -222,7 +238,6 @@ const styles: any = {
     fontSize: "20px",
     cursor: "pointer"
   },
-
   inputRow: {
     display: "flex",
     gap: "8px",
