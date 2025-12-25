@@ -1,180 +1,259 @@
-## 📌 Spur AI Support Agent
+Spur AI Support Agent – SpurCart Assignment
 
-A **full-stack AI customer support chat application** built as part of the **Spur Software Engineer Hiring Assignment**.
-Users can chat with an AI support agent, and all conversations are persisted with session support.
+A fully working AI-powered customer support agent for SpurCart, built as part of the Spur Software Engineer Hiring Assignment.
 
----
+The agent:
 
-## 🚀 Features
+Persists chat history (per session)
 
-✔️ Beautiful real-world chat UI
-✔️ AI-powered customer support
-✔️ Session-based conversation (chat continues after reload)
-✔️ Persistent storage using Prisma + SQLite
-✔️ Typing indicator + UX polish
-✔️ New Chat reset option
-✔️ Voice input support (mic 🎤)
-✔️ Robust error handling
+Responds using SpurCart policies
 
----
+Redirects unrelated questions back to support topics
 
-## 🧠 Tech Stack
+Provides realistic support UX with typing animation, voice input & session restore
 
-### **Frontend**
+Built with Prisma + SQLite + Express + TypeScript + Vite React + Groq LLM
 
-* React (TypeScript)
-* Vite
-* Axios
-* CSS + Inline UI Styling
 
-### **Backend**
-
-* Node.js
-* Express.js
-* TypeScript
-* Prisma ORM
-* SQLite
-
-### **AI**
-
-* OpenAI / GPT / Grok
-* System prompt tuned for ecommerce support
-* Context-aware replies using chat history
 
 ---
 
-## 📁 Project Structure
+🧠 Live Demo
 
-```
-spur/
-├── spur-frontend   # React UI
-└── spur-backend    # Node + Express API
-```
+Frontend (Vercel): https://spur-ai-support-agent.vercel.app (example — replace with yours)
 
-Backend Structure:
+Backend (Render): https://spur-ai-support-agent-xf77.onrender.com
 
-```
-src
- ├─ routes/
- ├─ services/
- ├─ db/
- └─ index.ts
-```
+
 
 ---
 
-## ⚙️ Local Setup Guide
+📌 Features
 
-### 1️⃣ Clone Repo
+Feature	Status
 
-```
-git clone https://github.com/YOUR_USERNAME/spur-ai-support-agent.git
+Persisted conversation history	✅
+New chat / resume chat	✅
+Voice input (browser speech API)	✅
+Typing dots animation	✅
+Guardrails against unrelated questions	✅
+Works with deployed backend	✅
+Readable code & modular backend	✅
+
+
+
+---
+
+
+---
+
+📦 Tech Stack
+
+Layer	Tools
+
+Frontend	React + TypeScript + Vite
+Backend	Node.js + Express + TypeScript
+LLM Provider	Groq — model: llama-3.1-8b-instant
+Database	SQLite via Prisma
+Deployment	Render (backend), Vercel (frontend)
+
+
+
+---
+
+🛠 How to Run Locally
+
+1️⃣ Clone the repo
+
+git clone https://github.com/kanak-sys/spur-ai-support-agent.git
 cd spur-ai-support-agent
-```
+
 
 ---
 
-### 2️⃣ Backend Setup
+2️⃣ Backend Setup
 
-```
 cd spur-backend
+cp .env.example .env
+
+Edit .env and add:
+
+GROQ_API_KEY=your_key_here
+DATABASE_URL="file:./prisma/dev.db"
+
+Install dependencies:
+
 npm install
-```
 
-Create `.env`
+Run DB migrations:
 
-```
-OPENAI_API_KEY=your_key_here
-DATABASE_URL="file:./dev.db"
-```
+npx prisma migrate deploy
 
-Run Prisma
+Start server:
 
-```
-npx prisma migrate dev --name init
-```
-
-Start Server
-
-```
 npx ts-node-dev src/index.ts
-```
 
-Backend → `http://localhost:5000`
 
 ---
 
-### 3️⃣ Frontend Setup
+3️⃣ Frontend Setup
 
-```
 cd spur-frontend
 npm install
 npm run dev
-```
 
-Frontend → `http://localhost:5173`
+The app runs at http://localhost:5173
 
----
-
-## 🧠 How it Works
-
-1️⃣ User types message
-2️⃣ Backend:
-
-* Creates / resumes session
-* Saves message
-* Sends history + message to LLM
-  3️⃣ LLM replies
-  4️⃣ Reply stored + returned
-  5️⃣ Frontend updates UI + scrolls smoothly
 
 ---
 
-## 🔐 Security
-
-✔️ `.env` ignored
-✔️ DB file ignored
-✔️ No hardcoded secrets
-✔️ Clean architecture
 
 ---
 
-## 🧪 Error Handling
+🔧 Environment Variables
 
-* Prevents empty messages
-* Friendly fallback replies
-* Handles API timeouts
-* Never crashes UI or backend
+Name	Description
 
----
+GROQ_API_KEY	LLM provider API key
+DATABASE_URL	SQLite database path
 
-## 🎥 Screenshots
 
-<img width="686" height="862" alt="{43D0C6EB-351D-4C38-92FD-9AC130A19BE5}" src="https://github.com/user-attachments/assets/f9d2775d-a690-4176-bc13-3a32e2171e19" />
 
 ---
 
-## 📌 Notes
-
-* Uses SQLite for simplicity (recommended by assignment)
-* Can swap to PostgreSQL easily
-* Designed to be scalable
-* Clean code & best practices followed
 
 ---
 
-## 👨‍💻 Author
+🧱 Architecture Overview
 
-**Kanak**
-Final Year B.Tech CSE
-Aspiring Software Engineer 🚀
+spur-ai-support-agent/
+ ├─ spur-backend/
+ │   ├─ src/
+ │   │  ├─ routes/        # HTTP endpoints
+ │   │  ├─ services/      # LLM prompt logic
+ │   │  ├─ db/            # Prisma client
+ │   │  └─ index.ts       # Express bootstrap
+ │   └─ prisma/           # Data model & migrations
+ │
+ └─ spur-frontend/
+     └─ src/
+        ├─ App.tsx        # UI, message input, animations
+        └─ index.css      # typing dots animation
+
+Design choices
+
+DB schemas keep messages normalized and easy to extend.
+
+LLM prompt isolated in /services to replace/upgrade providers easily.
+
+History retrieval keeps latency low and supports future pagination.
+
+Frontend maintains session ID in localStorage to restore past conversations.
+
+
 
 ---
 
-## ✅ Status
 
-✔ Fully Functional
-✔ Meets Spur Assignment Requirements
-✔ Ready For Evaluation
+---
+
+🤖 LLM Notes
+
+Item	Value
+
+Provider	Groq
+Model	llama-3.1-8b-instant
+Prompting Strategy	Strict system guardrails to redirect unrelated chat
+Purpose	E-commerce support agent behavior
+
+
+Prompt Snippet
+
+You are Spur AI Support Agent for SpurCart — an online ecommerce store.
+...
+If the user asks ANYTHING unrelated:
+→ DO NOT answer the question.
+→ POLITELY redirect back to SpurCart support topics.
+
+
+---
+
+
+---
+
+🧪 Correctness Checks
+
+Requirement	Implementation
+
+Persist sessions	sessionId + Prisma
+Retrieve history	GET /chat/:sessionId
+Unrelated Q redirect	strict systemPrompt
+Error handling	try/catch with graceful UI
+Long message handling	500 char validation
+Typing indicator	animated dots CSS
+
+
+
+---
+
+
+---
+
+🚀 Deployments
+
+Backend (Render)
+
+Build:
+
+npm install && npx prisma migrate deploy
+
+Start:
+
+npx ts-node src/index.ts
+
+Frontend (Vercel)
+
+Just import repo → Deploy
+
+➡ Update API URL:
+
+https://spur-ai-support-agent-xf77.onrender.com/chat
+
+
+---
+
+
+---
+
+⚖️ Trade-offs & "If I had more time…"
+
+Enhancement	Reason
+
+Add authentication	separate user-based histories
+Pagination of history	scale for long conversations
+Streaming LLM responses	more natural agent feel
+Better error banner UI	instead of inline chat bubble
+Vector search for FAQs	improve product discovery
+
+
+
+
+
+---
+
+🟢 Status
+
+✔ Meets assignment spec
+✔ Redirects unrelated questions
+✔ Persisted conversations & working deployment
+✔ No crash-on-change behavior
+
+
+---
+
+💬 Contact
+
+Kanak
+Email: mkanak0430@gmail.com
 
 ---
