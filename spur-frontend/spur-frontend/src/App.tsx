@@ -14,6 +14,8 @@ export default function App() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const backendURL = "https://spur-ai-support-agent-xf77.onrender.com/chat";
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(scrollToBottom, [messages]);
@@ -37,7 +39,7 @@ export default function App() {
     const loadHistory = async () => {
       if (!sessionId) return;
       try {
-        const res = await axios.get(`http://localhost:5000/chat/${sessionId}`);
+        const res = await axios.get(`${backendURL}/${sessionId}`);
         setMessages(res.data);
       } catch {
         console.log("History loading failed");
@@ -57,19 +59,9 @@ export default function App() {
     recognition.lang = "en-US";
     recognition.interimResults = false;
 
-    recognition.onstart = () => {
-      setInput("🎙 Listening...");
-    };
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setInput(transcript);
-    };
-
-    recognition.onerror = () => {
-      alert("Voice recognition error. Try again.");
-    };
-
+    recognition.onstart = () => setInput("🎙 Listening...");
+    recognition.onresult = (event: any) => setInput(event.results[0][0].transcript);
+    recognition.onerror = () => alert("Voice recognition error. Try again.");
     recognition.start();
   };
 
@@ -84,7 +76,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/chat/message", { message: input, sessionId });
+      const res = await axios.post(`${backendURL}/message`, { message: input, sessionId });
       setSessionId(res.data.sessionId);
       localStorage.setItem("spur-session", res.data.sessionId);
 
