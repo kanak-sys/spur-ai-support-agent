@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import "./index.css";
 
 interface Message {
   sender: "user" | "ai";
   text: string;
+  time?: string;
 }
 
 export default function App() {
@@ -13,96 +15,154 @@ export default function App() {
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(scrollToBottom, [messages]);
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-
-    const userMessage = input;
-    setInput("");
-    setMessages(prev => [...prev, { sender: "user", text: userMessage }]);
-    setLoading(true);
-
-    try {
-      const res = await axios.post("http://localhost:5000/chat/message", {
-        message: userMessage,
-        sessionId,
-      });
-
-      setSessionId(res.data.sessionId);
-      localStorage.setItem("spur-session", res.data.sessionId);
-
-      setMessages(prev => [
-        ...prev,
-        { sender: "ai", text: res.data.reply },
-      ]);
-    } catch {
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: "ai",
-          text: "Sorry, something went wrong. Please try again.",
-        },
-      ]);
+  // 🎉 Welcome message first time only
+  useEffect(() => {
+    if (!localStorage.getItem("spur-welcome")) {
+      setMessages([{ sender: "ai", text: "👋 Hey! I'm your Spur AI Support Agent — how can I assist today?" }]);
+      localStorage.setItem("spur-welcome", "yes");
     }
+  }, []);
 
-    setLoading(false);
-  };
-
-  const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !loading) sendMessage();
-  };
-
+  // Load saved session
   useEffect(() => {
     const saved = localStorage.getItem("spur-session");
     if (saved) setSessionId(saved);
   }, []);
 
+  // Fetch old chat
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!sessionId) return;
+      try {
+        const res = await axios.get(`http://localhost:5000/chat/${sessionId}`);
+        setMessages(res.data);
+      } catch {
+        console.log("History loading failed");
+      }
+    };
+    loadHistory();
+  }, [sessionId]);
+
+  // 🎤 Voice input handler
+  const startVoiceInput = () => {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("Voice input is not supported in this browser 😢");
+      return;
+    }
+
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setInput("🎙 Listening...");
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+    };
+
+    recognition.onerror = () => {
+      alert("Voice recognition error. Try again.");
+    };
+
+    recognition.start();
+  };
+
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+
+    const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    const userMsg: Message = { sender: "user", text: input, time: timestamp };
+    setMessages(prev => [...prev, userMsg]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const res = await axios.post("http://localhost:5000/chat/message", { message: input, sessionId });
+      setSessionId(res.data.sessionId);
+      localStorage.setItem("spur-session", res.data.sessionId);
+
+      const aiMsg: Message = { sender: "ai", text: res.data.reply, time: timestamp };
+      setMessages(prev => [...prev, aiMsg]);
+    } catch {
+      setMessages(prev => [...prev, { sender: "ai", text: "⚠️ Something went wrong. Try again.", time: timestamp }]);
+    }
+    setLoading(false);
+  };
+
+  const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) =>
+    e.key === "Enter" && !loading && sendMessage();
+
   return (
     <div style={styles.container}>
       <div style={styles.chatBox}>
-        <div style={styles.header}>Spur AI Support Agent</div>
+        <div style={styles.header}>
+          Spur AI Support Agent
+          <button
+            style={styles.newChat}
+            onClick={() => {
+              localStorage.removeItem("spur-session");
+              setMessages([{ sender: "ai", text: "✨ New chat started — how can I help?" }]);
+              setSessionId(null);
+            }}
+          >
+            ➕
+          </button>
+        </div>
 
         <div style={styles.messages}>
           {messages.map((m, i) => (
-            <div
-              key={i}
-              style={m.sender === "user" ? styles.userMsg : styles.aiMsg}
-            >
-              {m.text}
+            <div key={i} style={m.sender === "user" ? styles.userRow : styles.aiRow}>
+              <img
+                src={m.sender === "user"
+                  ? "https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=user"
+                  : "https://api.dicebear.com/9.x/bottts/svg?seed=ai"}
+                style={styles.avatar}
+              />
+              <div>
+                <div style={styles.msgBubble(m.sender)}>{m.text}</div>
+                {m.time && <div style={styles.time}>{m.time}</div>}
+              </div>
             </div>
           ))}
 
+          {/* 🔵 Typing animation */}
           {loading && (
-            <div style={styles.aiMsg}>Agent is typing...</div>
+            <div style={styles.aiRow}>
+              <img src="https://api.dicebear.com/9.x/bottts/svg?seed=ai" style={styles.avatar} />
+              <div className="typing-dots"><span></span><span></span><span></span></div>
+            </div>
           )}
 
           <div ref={messagesEndRef} />
         </div>
 
+        {/* 🔊 Voice mic added */}
         <div style={styles.inputRow}>
+          <button style={styles.micBtn} onClick={startVoiceInput}>🎤</button>
+
           <input
             style={styles.input}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Ask anything..."
-            disabled={loading}
+            placeholder="Type your message or use mic..."
           />
-          <button onClick={sendMessage} disabled={loading} style={styles.button}>
-            Send
-          </button>
+
+          <button style={styles.sendBtn} onClick={sendMessage}>Send</button>
         </div>
       </div>
     </div>
   );
 }
 
+// 🌈 Styling
 const styles: any = {
   container: {
     height: "100vh",
@@ -110,61 +170,88 @@ const styles: any = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "#0f172a",
+    background: "linear-gradient(135deg,#0f172a,#1e293b,#2563eb)"
   },
   chatBox: {
-    width: "400px",
-    height: "600px",
+    width: "420px",
+    height: "620px",
     background: "white",
-    borderRadius: "12px",
+    borderRadius: "18px",
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
+    boxShadow: "0px 6px 18px rgba(0,0,0,0.4)"
   },
   header: {
-    background: "#2563eb",
+    background: "linear-gradient(90deg,#2563eb,#60a5fa)",
     color: "white",
-    padding: "12px",
+    padding: "14px",
     textAlign: "center",
     fontWeight: "bold",
+    fontSize: "18px",
+    position: "relative"
+  },
+  newChat: {
+    position: "absolute",
+    right: "14px",
+    top: "10px",
+    background: "#1e40af",
+    color: "white",
+    padding: "4px 8px",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer"
   },
   messages: {
     flex: 1,
-    padding: "10px",
+    background: "#f1f5f9",
     overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
+    padding: "12px"
   },
-  userMsg: {
-    alignSelf: "flex-end",
-    background: "#2563eb",
-    color: "white",
-    padding: "8px 10px",
-    borderRadius: "10px",
-    maxWidth: "75%",
+  userRow: { display: "flex", justifyContent: "flex-end", marginBottom: "8px" },
+  aiRow: { display: "flex", justifyContent: "flex-start", marginBottom: "8px" },
+  avatar: { width: "36px", marginRight: "8px" },
+  msgBubble: (sender: string) => ({
+    padding: "10px 12px",
+    borderRadius: sender === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+    maxWidth: "260px",
+    color: sender === "user" ? "white" : "black",
+    background: sender === "user" ? "#2563eb" : "#e2e8f0"
+  }),
+  time: { fontSize: "10px", opacity: 0.6, marginLeft: "4px" },
+
+  // 🎤 voice button
+  micBtn: {
+    background: "#f1f5f9",
+    border: "1px solid #cbd5e1",
+    borderRadius: "50%",
+    width: "42px",
+    height: "42px",
+    fontSize: "20px",
+    cursor: "pointer"
   },
-  aiMsg: {
-    alignSelf: "flex-start",
-    background: "#e5e7eb",
-    padding: "8px 10px",
-    borderRadius: "10px",
-    maxWidth: "75%",
-  },
+
   inputRow: {
-    padding: "10px",
     display: "flex",
     gap: "8px",
+    padding: "12px",
+    borderTop: "1px solid #e2e8f0"
   },
   input: {
     flex: 1,
-    padding: "8px",
+    padding: "10px",
+    fontSize: "15px",
+    border: "1px solid #cbd5e1",
+    borderRadius: "8px",
+    outline: "none"
   },
-  button: {
-    padding: "8px 12px",
+  sendBtn: {
     background: "#2563eb",
     color: "white",
+    padding: "10px 14px",
+    borderRadius: "8px",
     border: "none",
-    borderRadius: "6px",
-  },
+    cursor: "pointer",
+    fontWeight: "bold"
+  }
 };
