@@ -108,6 +108,45 @@ The app runs at http://localhost:5173
 ---
 
 
+
+🧱 Architecture Overview (Short)
+
+The system follows a layered client-server architecture with persistent chat sessions and an LLM-based support engine.
+
+Frontend (React + Vite)
+│
+│ REST API calls (Axios)
+▼
+Backend (Node + Express)
+│
+├── Routes: 
+│   • POST /chat/message → send user message & get reply
+│   • GET /chat/:sessionId → restore previous chat
+│
+├── Service:
+│   • generateReply(history, message)
+│   • builds system prompt + sends to Groq LLM
+│
+└── Data (Prisma + SQLite)
+    • messages + sessions stored for persistence
+
+Session logic:
+sessionId is saved in localStorage, allowing the user to return and continue the same chat.
+Messages are stored in the database so history loads after refresh or reconnect.
+
+LLM behavior:
+A structured system prompt ensures responses stay on-topic (SpurCart support).
+Unrelated questions are answered briefly and redirected back to support topics.
+
+Extensibility:
+Because routing, service logic, and LLM integration are decoupled, new channels (WhatsApp/IG), authentication, or product search could be added without UI changes.
+
+
+
+
+---
+
+
 ---
 
 🔧 Environment Variables
@@ -116,39 +155,6 @@ Name	Description
 
 GROQ_API_KEY	LLM provider API key
 DATABASE_URL	SQLite database path
-
-
-
----
-
-
----
-
-🧱 Architecture Overview
-
-spur-ai-support-agent/
- ├─ spur-backend/
- │   ├─ src/
- │   │  ├─ routes/        # HTTP endpoints
- │   │  ├─ services/      # LLM prompt logic
- │   │  ├─ db/            # Prisma client
- │   │  └─ index.ts       # Express bootstrap
- │   └─ prisma/           # Data model & migrations
- │
- └─ spur-frontend/
-     └─ src/
-        ├─ App.tsx        # UI, message input, animations
-        └─ index.css      # typing dots animation
-
-Design choices
-
-DB schemas keep messages normalized and easy to extend.
-
-LLM prompt isolated in /services to replace/upgrade providers easily.
-
-History retrieval keeps latency low and supports future pagination.
-
-Frontend maintains session ID in localStorage to restore past conversations.
 
 
 
