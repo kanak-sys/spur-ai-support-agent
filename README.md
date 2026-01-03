@@ -1,4 +1,4 @@
-🚀 Spur AI Support Agent — SpurCart Assignment
+🚀 Spur AI Support Agent — SpurCart Assignment  https://spur-ai-support-agent-hfrr.vercel.app/
 
 > A full-stack AI-powered customer support assistant for SpurCart, built for the Spur Software Engineer Hiring Assignment.
 Focused on real product UX, persistent conversation history, and LLM guardrails.
